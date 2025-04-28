@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Precise timer</title>
+    </head>
+    <body>
+        <div id="app">
+            <h1>
+                <span id="time">10000</span>
+                <span>ms</span>
+            </h1>
+            <p>
+                <label for="seconds-input">Seconds</label>
+            </p>
+            <p>
+                <input type="number" name="seconds" id="seconds-input" value="10" />
+            </p>
+            <p>
+                <label for="resolution-input">Timer resolution</label>
+            </p>
+            <p>
+                <input
+                    type="number"
+                    name="resolution"
+                    id="resolution-input"
+                    value="100"
+                />
+            </p>
+            <p>
+                <button id="start-button">Start timer</button>
+            </p>
+            <p>
+                <button id="pause-button">Pause timer</button>
+            </p>
+            <p>
+                <button id="stop-button">Stop timer</button>
+            </p>
+        </div>
+        <script type="module" src="/src/main.ts"></script>
+    </body>
+</html>
