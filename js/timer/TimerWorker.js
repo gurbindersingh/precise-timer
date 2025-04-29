@@ -1,23 +1,19 @@
-import { TimerEventHook, TimerMessage } from "./interfaces";
-
 /**
  * This class abstracts the creation of the web worker with the timer
  * functionality and the message passing between it and the main thread.
  */
 export class TimerWorker {
-    private readonly workerId: string;
-    private readonly webWorker: Worker;
-
+    workerId;
+    webWorker;
     /**
      * Create a new worker that executes the timer in background thread.
      *
      * @param timerResolution The number of milliseconds after which each tick event will be fired.
      */
-    constructor(timerResolution: number) {
+    constructor(timerResolution) {
         if (timerResolution < 1) {
             throw new Error("Timer resolution must be at least 1 ms.");
         }
-
         this.workerId = crypto.randomUUID();
         // Using `new URL()` is the syntax as specified in the Vite documentation
         this.webWorker = new Worker(new URL("./worker", import.meta.url), {
@@ -25,7 +21,6 @@ export class TimerWorker {
         });
         this.createTimer(timerResolution);
     }
-
     /**
      * Setup event listeners for the timer events.
      *
@@ -34,12 +29,11 @@ export class TimerWorker {
      * @param eventHooks The callbacks to execute on the specified events.
      * @returns `this`
      */
-    setupEventListeners(eventHooks: TimerEventHook[]) {
+    setupEventListeners(eventHooks) {
         console.log(`[${this.workerId}] Setting up message Handlers.`);
-
         // Sets up the event listener for the web worker. When ever the web worker
         // calls `postMessage` this function will be executed.
-        this.webWorker.onmessage = (message: MessageEvent<TimerMessage>) => {
+        this.webWorker.onmessage = (message) => {
             if (message.data.event === "error") {
                 console.error("Error in web worker:", message.data.errorDetails);
                 return;
@@ -48,53 +42,48 @@ export class TimerWorker {
             eventHooks
                 .filter((hook) => hook.onEvent === message.data.event)
                 .forEach((hook) => {
-                    hook.execute();
-                });
+                hook.execute();
+            });
         };
         return this;
     }
-
-    private notifyWebWorker(message: TimerMessage) {
+    notifyWebWorker(message) {
         this.webWorker.postMessage(message);
     }
-
     /**
      * Will send a message to the web worker to create the timer.
-     * 
+     *
      * @param timerResolution The number of milliseconds after which to fire the `tick` events.
      */
-    private createTimer(timerResolution: number) {
+    createTimer(timerResolution) {
         this.notifyWebWorker({
             event: "create",
             workerId: this.workerId,
             timerResolution: timerResolution
         });
     }
-
     /**
      * Will send a message to the web worker to start the timer.
      *
      * @param milliseconds The number of milliseconds the timer should run for.
      */
-    public startTimer(milliseconds: number) {
+    startTimer(milliseconds) {
         this.notifyWebWorker({
             event: "start",
             milliseconds: milliseconds,
             workerId: this.workerId
         });
     }
-
     /**
      * Sends a message to the web worker to stop the timer.
      */
-    public stopTimer() {
+    stopTimer() {
         this.notifyWebWorker({ event: "stop", workerId: this.workerId });
     }
-
     /**
      * Terminate the worker thread.
      */
-    public terminate() {
+    terminate() {
         this.webWorker.terminate();
     }
 }

@@ -1,0 +1,25 @@
+// tsconfig.build.json
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
+    /* keep the syntax untouched — just delete types */
+    "target": "esnext",
+    "module": "esnext",
+
+    /* clone the source tree into dist/ */
+    "rootDir": "./src",
+    "outDir": "./js",
+
+    /* don’t generate .d.ts, don’t bundle */
+    "declaration": false,
+    "emitDeclarationOnly": false,
+
+    /* still fail the build on TS errors */
+    "noEmitOnError": true
+  },
+
+  /* compile exactly the files you ship */
+  "include": ["src/**/*.ts"]
+}
