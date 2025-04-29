@@ -5,7 +5,9 @@ import { CountdownSettings, TimerEventPayload } from "./interfaces";
  * handle in calling function.
  */
 export class Timer extends EventTarget {
-    static readonly DRIFT_CORRECTION = 0.875;
+    // This will defines the percentage of the timeout that will use busy
+    // waiting to make the timer more accurate.
+    static readonly DRIFT_CORRECTION = 0.125;
 
     readonly workerId: string;
     readonly timerId: string;
@@ -33,6 +35,12 @@ export class Timer extends EventTarget {
         this.log("log", "Created timer.");
     }
 
+    /**
+     * Start the timer. This function will use the `setTimeout` function to set
+     * up when the next `tick` event should be fired, so it is non-blocking.
+     *
+     * @param milliseconds The number of milliseconds the timer should run for.
+     */
     public start(milliseconds: number) {
         this.log("log", "Starting timer.");
 
@@ -45,6 +53,9 @@ export class Timer extends EventTarget {
         });
     }
 
+    /**
+     * Stop the currently running timer by clearing the timeout.
+     */
     public stop() {
         if (this.timeoutId > 0) {
             clearTimeout(this.timeoutId);
@@ -52,17 +63,23 @@ export class Timer extends EventTarget {
         }
     }
 
+    /**
+     * Schedule when the next `tick` event will be fired.
+     *
+     * @param settings Object containing all relevant data for the countdown.
+     */
     private scheduleNextTick(settings: CountdownSettings) {
         if (settings.millisecondsLeft > 0) {
-            this.timeoutId = setTimeout(
-                () => {
-                    this.countdown(settings);
-                },
-                Math.floor(
-                    (settings.nextExpectedTickAt - performance.now()) *
-                        Timer.DRIFT_CORRECTION
-                )
-            );
+            // Schedule the next `tick` event. We use the DRIFT_CORRECTION
+            // constant to preemptively correct the timer drift. During testing
+            // I found that the delay is roughly 12% of the specified timeout
+            // value. So to counter that we make the timeout length 12% shorter
+            // and use busy waiting for the remaining 12%. This gives us a timer
+            // that has a total delay of at most 1 or 2 milliseconds regardless
+            // of how long it runs.
+            this.timeoutId = setTimeout(() => {
+                this.countdown(settings);
+            }, Math.floor((settings.nextExpectedTickAt - performance.now()) * (1 - Timer.DRIFT_CORRECTION)));
             this.log("log", "Scheduled next countdown. Currently: ", performance.now());
         } else {
             this.fireEvent({ timerEvent: "completed" });
@@ -77,12 +94,19 @@ export class Timer extends EventTarget {
         }
     }
 
+    /**
+     * Emits the `tick` event, adjusts the remaining time and schedules the next
+     * execution.
+     * 
+     * @param settings Object containing all the relevant countdown settings.
+     */
     private countdown(settings: CountdownSettings) {
         const busyStart = performance.now();
         while (performance.now() < settings.nextExpectedTickAt) {
             continue;
         }
         const busyEnd = performance.now();
+    
         const newSettings = {
             ...settings,
             millisecondsLeft: settings.millisecondsLeft - this.timerResolution,
@@ -92,6 +116,7 @@ export class Timer extends EventTarget {
             timerEvent: "tick",
             millisecondsLeft: newSettings.millisecondsLeft
         });
+        
         this.log(
             "log",
             "function:countdown",

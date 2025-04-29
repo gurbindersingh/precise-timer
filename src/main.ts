@@ -22,7 +22,7 @@ function resetSettings() {
     if (timerWorker) {
         timerWorker.terminate();
     }
-    timerWorker = new TimerWorker(resolution).setupMessageHandler([
+    timerWorker = new TimerWorker(resolution).setupEventListeners([
         {
             onEvent: "tick",
             execute() {
